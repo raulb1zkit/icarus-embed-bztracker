@@ -44,6 +44,9 @@ import 'package:icarus/services/archive_manifest.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:icarus/embed/embed_postmessage_stub.dart'
+    if (dart.library.html) 'package:icarus/embed/embed_postmessage_web.dart'
+    as embed_post;
 
 class StrategyData extends HiveObject {
   final String id;
@@ -435,6 +438,9 @@ class StrategyProvider extends Notifier<StrategyState> {
     try {
       ref.read(autoSaveProvider.notifier).ping(); // UI: “Saving…”
       await saveToHive(id);
+      try {
+        embed_post.postEmbedSavePayload(buildEmbedPayloadJson(id));
+      } catch (_) {}
     } finally {
       _saveInProgress = false;
       if (_pendingSave) {
@@ -3412,6 +3418,153 @@ class StrategyProvider extends Notifier<StrategyState> {
     }
 
     return MapThemeProfilesProvider.immutableDefaultPalette;
+  }
+
+  /// Same JSON shape as the inner `{name}.json` inside a single-strategy `.ica` export.
+  String buildEmbedPayloadJson(String id) {
+    final strategy =
+        Hive.box<StrategyData>(HiveBoxNames.strategiesBox).get(id);
+    if (strategy == null) {
+      throw StateError("Strategy not found: $id");
+    }
+    final payload = {
+      "name": strategy.name,
+      "versionNumber": "${Settings.versionNumber}",
+      "mapData": "${Maps.mapNames[strategy.mapData]}",
+      "themePalette": _resolveThemePaletteForExport(strategy).toJson(),
+      if (strategy.themeProfileId != null)
+        "themeProfileId": strategy.themeProfileId,
+      "pages": strategy.pages.map((page) => page.toJson(strategy.id)).toList(),
+    };
+    return jsonEncode(payload);
+  }
+
+  /// Import strategy JSON from the embed parent ([postMessage]) and persist to Hive.
+  Future<String> importFromEmbedJsonString(
+    String jsonString, {
+    String? nameOverride,
+  }) async {
+    final newID = const Uuid().v4();
+    const bool isZip = false;
+
+    final Map<String, dynamic> json =
+        jsonDecode(jsonString) as Map<String, dynamic>;
+    final versionNumber = int.tryParse(json["versionNumber"].toString()) ??
+        Settings.versionNumber;
+    _throwIfImportedVersionIsTooNew(versionNumber);
+
+    // Backwards compatibility for pre-pages exported strategies
+    final List<DrawingElement> drawingData =
+        DrawingProvider.fromJson(jsonEncode(json["drawingData"] ?? []));
+
+    final List<PlacedAgent> agentData =
+        AgentProvider.fromJson(jsonEncode(json["agentData"] ?? []))
+            .whereType<PlacedAgent>()
+            .toList(growable: false);
+
+    final List<PlacedAbility> abilityData =
+        AbilityProvider.fromJson(jsonEncode(json["abilityData"] ?? []));
+
+    final mapData = MapProvider.fromJson(jsonEncode(json["mapData"]));
+    final textData =
+        TextProvider.fromJson(jsonEncode(json["textData"] ?? []));
+
+    List<PlacedImage> imageData = [];
+    if (!kIsWeb) {
+      log('Legacy image data loading');
+      imageData = await PlacedImageProvider.legacyFromJson(
+          jsonString: jsonEncode(json["imageData"] ?? []),
+          strategyID: newID);
+    }
+
+    final StrategySettings settingsData;
+    final bool isAttack;
+    final List<PlacedUtility> utilityData;
+
+    if (json["settingsData"] != null) {
+      settingsData = ref
+          .read(strategySettingsProvider.notifier)
+          .fromJson(jsonEncode(json["settingsData"]));
+    } else {
+      settingsData = StrategySettings();
+    }
+
+    if (json["isAttack"] != null) {
+      isAttack = json["isAttack"] == "true" ? true : false;
+    } else {
+      isAttack = true;
+    }
+
+    if (json["utilityData"] != null) {
+      utilityData = UtilityProvider.fromJson(jsonEncode(json["utilityData"]));
+    } else {
+      utilityData = [];
+    }
+    final MapThemePalette? importedThemeOverridePalette =
+        json["themePalette"] is Map<String, dynamic>
+            ? MapThemePalette.fromJson(json["themePalette"])
+            : (json["themePalette"] is Map
+                ? MapThemePalette.fromJson(
+                    Map<String, dynamic>.from(json["themePalette"]))
+                : null);
+    final rawImportedThemeProfileId = json['themeProfileId'];
+    final importedThemeProfileId = rawImportedThemeProfileId is String &&
+            rawImportedThemeProfileId.isNotEmpty
+        ? rawImportedThemeProfileId
+        : null;
+    const Map<String, String> themeProfileIdRemap = {};
+    final String? resolvedThemeProfileId = importedThemeProfileId == null
+        ? null
+        : (themeProfileIdRemap[importedThemeProfileId] ??
+            importedThemeProfileId);
+
+    final List<StrategyPage> pages = json["pages"] != null
+        ? await StrategyPage.listFromJson(
+            json: jsonEncode(json["pages"]),
+            strategyID: newID,
+            isZip: isZip,
+          )
+        : [];
+
+    StrategyData newStrategy = StrategyData(
+      // ignore: deprecated_member_use_from_same_package, deprecated_member_use
+      drawingData: drawingData,
+      // ignore: deprecated_member_use_from_same_package, deprecated_member_use
+      agentData: agentData,
+      // ignore: deprecated_member_use_from_same_package, deprecated_member_use
+      abilityData: abilityData,
+      // ignore: deprecated_member_use_from_same_package, deprecated_member_use
+      textData: textData,
+      // ignore: deprecated_member_use_from_same_package, deprecated_member_use
+      imageData: imageData,
+      // ignore: deprecated_member_use_from_same_package, deprecated_member_use
+      utilityData: utilityData,
+      // ignore: deprecated_member_use_from_same_package, deprecated_member_use
+      isAttack: isAttack,
+      // ignore: deprecated_member_use_from_same_package, deprecated_member_use
+      strategySettings: settingsData,
+
+      pages: pages,
+      id: newID,
+      name: nameOverride ??
+          (json['name'] as String?) ??
+          'Imported',
+      mapData: mapData,
+      versionNumber: versionNumber,
+      lastEdited: DateTime.now(),
+
+      folderID: null,
+      themeProfileId: resolvedThemeProfileId,
+      themeOverridePalette: resolvedThemeProfileId == null
+          ? importedThemeOverridePalette
+          : null,
+    );
+
+    newStrategy = await migrateLegacyData(newStrategy);
+
+    await Hive.box<StrategyData>(HiveBoxNames.strategiesBox)
+        .put(newStrategy.id, newStrategy);
+    return newStrategy.id;
   }
 
   Future<String> zipStrategy({

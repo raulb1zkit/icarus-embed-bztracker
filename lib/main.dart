@@ -27,6 +27,9 @@ import 'package:icarus/strategy_view.dart';
 import 'package:icarus/widgets/folder_navigator.dart';
 import 'package:icarus/widgets/global_shortcuts.dart';
 import 'package:icarus/widgets/settings_tab.dart';
+import 'package:icarus/embed/icarus_embed_bridge_stub.dart'
+    if (dart.library.html) 'package:icarus/embed/icarus_embed_bridge_web.dart'
+    as icarus_embed_bridge;
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
@@ -113,6 +116,10 @@ Future<void> main(List<String> args) async {
           child: MyApp(data: args),
         ),
       );
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        icarus_embed_bridge.registerIcarusEmbedBridge();
+      });
     },
     (error, stackTrace) {
       AppErrorReporter.reportError(
