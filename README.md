@@ -7,6 +7,14 @@ This repository is a **fork** of **[Icarus: Valorant Strategies & Lineups](https
 
 If you only want the original desktop-focused tool, use **upstream** directly.
 
+**Suggested clone folder name** (matches this repo and sits next to BzTracker):
+
+```bash
+git clone git@github.com:raulb1zkit/icarus-embed-bztracker.git icarus-embed-bztracker
+```
+
+The Dart package name in `pubspec.yaml` remains `icarus`; only the directory name changes.
+
 ---
 
 ## What this fork adds
