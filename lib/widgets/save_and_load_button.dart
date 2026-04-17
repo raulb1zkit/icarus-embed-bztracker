@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:icarus/services/web_downloader.dart' as web_dl;
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce/hive.dart';
@@ -55,15 +56,6 @@ class _SaveAndLoadButtonState extends ConsumerState<SaveAndLoadButton> {
             child: ShadIconButton.ghost(
               foregroundColor: Colors.white,
               onPressed: () async {
-                if (kIsWeb) {
-                  Settings.showToast(
-                    message:
-                        'This feature is only supported in the Windows version.',
-                    backgroundColor: Settings.tacticalVioletTheme.destructive,
-                  );
-                  return;
-                }
-
                 await ref
                     .read(strategyProvider.notifier)
                     .exportFile(ref.read(strategyProvider).id);
@@ -76,14 +68,6 @@ class _SaveAndLoadButtonState extends ConsumerState<SaveAndLoadButton> {
             child: ShadIconButton.ghost(
               foregroundColor: Colors.white,
               onPressed: () async {
-                if (kIsWeb) {
-                  Settings.showToast(
-                    message:
-                        'This feature is only supported in the Windows version.',
-                    backgroundColor: Settings.tacticalVioletTheme.destructive,
-                  );
-                  return;
-                }
                 if (_isLoading) return;
                 setState(() {
                   _isLoading = true;
@@ -167,16 +151,20 @@ class _SaveAndLoadButtonState extends ConsumerState<SaveAndLoadButton> {
                   setState(() {
                     _isLoading = false;
                   });
-                  String? outputFile = await FilePicker.platform.saveFile(
-                    type: FileType.custom,
-                    dialogTitle: 'Please select an output file:',
-                    fileName:
-                        "${ref.read(strategyProvider).stratName ?? "new image"}.png",
-                    allowedExtensions: ['png'],
-                  );
-                  if (outputFile != null) {
-                    final file = File(outputFile);
-                    await file.writeAsBytes(image);
+                  final fileName =
+                      "${ref.read(strategyProvider).stratName ?? "new image"}.png";
+                  if (kIsWeb) {
+                    web_dl.triggerBlobDownload(image, fileName, 'image/png');
+                  } else {
+                    final outputFile = await FilePicker.platform.saveFile(
+                      type: FileType.custom,
+                      dialogTitle: 'Please select an output file:',
+                      fileName: fileName,
+                      allowedExtensions: ['png'],
+                    );
+                    if (outputFile != null) {
+                      await File(outputFile).writeAsBytes(image);
+                    }
                   }
                 } catch (_) {
                 } finally {

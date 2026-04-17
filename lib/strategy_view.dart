@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:icarus/const/custom_icons.dart';
+import 'package:icarus/const/embed_mode.dart';
 import 'package:icarus/const/settings.dart';
 import 'package:icarus/interactive_map.dart';
 import 'package:icarus/providers/agent_filter_provider.dart';
@@ -88,6 +89,7 @@ class _StrategyViewState extends ConsumerState<StrategyView>
         );
       }
     });
+    final bool isEmbed = icarusEmbedMode;
     return Scaffold(
       body: Column(
         children: [
@@ -99,44 +101,47 @@ class _StrategyViewState extends ConsumerState<StrategyView>
               children: [
                 Row(
                   children: [
-                    ShadIconButton.ghost(
-                      foregroundColor: Colors.white,
-                      onPressed: _leaveToLibrary,
-                      icon: const Icon(Icons.home),
-                    ),
-                    const SizedBox(width: 5),
+                    if (!isEmbed) ...[
+                      ShadIconButton.ghost(
+                        foregroundColor: Colors.white,
+                        onPressed: _leaveToLibrary,
+                        icon: const Icon(Icons.home),
+                      ),
+                      const SizedBox(width: 5),
+                    ],
                     const MapSelector(),
-                    if (kIsWeb)
+                    if (kIsWeb && !isEmbed)
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
                         child: DemoTag(),
                       )
                   ],
                 ),
-                const StrategyQuickSwitcher(),
-                Row(
-                  children: [
-                    TextButton(
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () async {
-                          await launchUrl(Settings.dicordLink);
-                        },
-                        child: const Row(
-                          children: [
-                            Text("Have any bugs? Join the Discord"),
-                            SizedBox(
-                              width: 10,
-                            ),
-                            Icon(
-                              CustomIcons.discord,
-                              color: Colors.white,
-                            )
-                          ],
-                        )),
-                  ],
-                )
+                if (!isEmbed) const StrategyQuickSwitcher(),
+                if (!isEmbed)
+                  Row(
+                    children: [
+                      TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: () async {
+                            await launchUrl(Settings.dicordLink);
+                          },
+                          child: const Row(
+                            children: [
+                              Text("Have any bugs? Join the Discord"),
+                              SizedBox(
+                                width: 10,
+                              ),
+                              Icon(
+                                CustomIcons.discord,
+                                color: Colors.white,
+                              )
+                            ],
+                          )),
+                    ],
+                  )
               ],
             ),
           ),

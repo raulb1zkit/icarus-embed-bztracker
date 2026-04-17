@@ -6,6 +6,7 @@ import 'package:archive/archive_io.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart'
     show kIsWeb, listEquals, visibleForTesting;
+import 'package:icarus/services/web_downloader.dart' as web_dl;
 import 'package:icarus/const/line_provider.dart';
 import 'package:icarus/const/transition_data.dart';
 import 'package:icarus/providers/transition_provider.dart';
@@ -1204,6 +1205,9 @@ class StrategyProvider extends Notifier<StrategyState> {
       pageImageData.addAll(page.imageData);
     }
     if (!kIsWeb) {
+      // Cleanup of orphaned image bytes only applies on desktop where files
+      // live on disk. Web embed assets live in Supabase Storage and are
+      // managed by the parent.
       List<String> allImageIds = [];
       for (final page in newStrat.pages) {
         allImageIds.addAll(page.imageData.map((image) => image.id));
@@ -2898,18 +2902,16 @@ class StrategyProvider extends Notifier<StrategyState> {
       final textData =
           TextProvider.fromJson(jsonEncode(json["textData"] ?? []));
 
-      List<PlacedImage> imageData = [];
-      if (!kIsWeb) {
-        if (isZip) {
-          imageData = await PlacedImageProvider.fromJson(
-              jsonString: jsonEncode(json["imageData"] ?? []),
-              strategyID: newID);
-        } else {
-          log('Legacy image data loading');
-          imageData = await PlacedImageProvider.legacyFromJson(
-              jsonString: jsonEncode(json["imageData"] ?? []),
-              strategyID: newID);
-        }
+      List<PlacedImage> imageData;
+      if (isZip) {
+        imageData = await PlacedImageProvider.fromJson(
+            jsonString: jsonEncode(json["imageData"] ?? []),
+            strategyID: newID);
+      } else {
+        log('Legacy image data loading');
+        imageData = await PlacedImageProvider.legacyFromJson(
+            jsonString: jsonEncode(json["imageData"] ?? []),
+            strategyID: newID);
       }
 
       final StrategySettings settingsData;
@@ -3469,13 +3471,12 @@ class StrategyProvider extends Notifier<StrategyState> {
     final textData =
         TextProvider.fromJson(jsonEncode(json["textData"] ?? []));
 
-    List<PlacedImage> imageData = [];
-    if (!kIsWeb) {
-      log('Legacy image data loading');
-      imageData = await PlacedImageProvider.legacyFromJson(
-          jsonString: jsonEncode(json["imageData"] ?? []),
-          strategyID: newID);
-    }
+    // Embed payloads never carry binary image bytes — only metadata + URLs in
+    // each PlacedImage.link, so use the byteless deserializer.
+    final List<PlacedImage> imageData = await PlacedImageProvider.fromJson(
+      jsonString: jsonEncode(json["imageData"] ?? []),
+      strategyID: newID,
+    );
 
     final StrategySettings settingsData;
     final bool isAttack;
@@ -3634,6 +3635,11 @@ class StrategyProvider extends Notifier<StrategyState> {
   Future<void> exportFile(String id) async {
     await forceSaveNow(id);
 
+    if (kIsWeb) {
+      await _exportFileWeb(id);
+      return;
+    }
+
     final outputFile = await FilePicker.platform.saveFile(
       type: FileType.custom,
       dialogTitle: 'Please select an output file:',
@@ -3643,6 +3649,29 @@ class StrategyProvider extends Notifier<StrategyState> {
 
     if (outputFile == null) return;
     await zipStrategy(id: id, outputFilePath: outputFile);
+  }
+
+  Future<void> _exportFileWeb(String id) async {
+    final strategy = Hive.box<StrategyData>(HiveBoxNames.strategiesBox).get(id);
+    if (strategy == null) return;
+
+    final payload = {
+      "versionNumber": "${Settings.versionNumber}",
+      "mapData": "${Maps.mapNames[strategy.mapData]}",
+      "themePalette": _resolveThemePaletteForExport(strategy).toJson(),
+      if (strategy.themeProfileId != null)
+        "themeProfileId": strategy.themeProfileId,
+      "pages": strategy.pages.map((page) => page.toJson(strategy.id)).toList(),
+    };
+
+    final name = sanitizeFileName(strategy.name);
+    final jsonBytes = utf8.encode(jsonEncode(payload));
+
+    final archive = Archive()
+      ..addFile(ArchiveFile.bytes('$name.json', jsonBytes));
+    final zipBytes = ZipEncoder().encode(archive);
+
+    web_dl.triggerBlobDownload(zipBytes, '$name.ica', 'application/zip');
   }
 
   Future<void> renameStrategy(String strategyID, String newName) async {

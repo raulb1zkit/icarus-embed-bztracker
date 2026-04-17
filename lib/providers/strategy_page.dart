@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:icarus/const/drawing_element.dart';
 import 'package:icarus/const/line_provider.dart';
@@ -122,7 +121,7 @@ class StrategyPage extends HiveObject {
 
   Map<String, dynamic> toJson(String strategyID) {
     String fetchedImageData =
-        kIsWeb ? "[]" : PlacedImageProvider.objectToJson(imageData, strategyID);
+        PlacedImageProvider.objectToJson(imageData, strategyID);
     String data = '''
                {
                "id": "$id",
@@ -167,17 +166,14 @@ class StrategyPage extends HiveObject {
       {required Map<String, dynamic> json,
       required String strategyID,
       required bool isZip}) async {
-    List<PlacedImage> imageData = [];
-
-    if (!kIsWeb) {
-      if (isZip) {
-        imageData = await PlacedImageProvider.fromJson(
-            jsonString: jsonEncode(json['imageData']), strategyID: strategyID);
-      } else {
-        imageData = await PlacedImageProvider.legacyFromJson(
-            jsonString: jsonEncode(json["imageData"] ?? []),
-            strategyID: strategyID);
-      }
+    List<PlacedImage> imageData;
+    if (isZip) {
+      imageData = await PlacedImageProvider.fromJson(
+          jsonString: jsonEncode(json['imageData']), strategyID: strategyID);
+    } else {
+      imageData = await PlacedImageProvider.legacyFromJson(
+          jsonString: jsonEncode(json["imageData"] ?? []),
+          strategyID: strategyID);
     }
 
     bool isAttack;

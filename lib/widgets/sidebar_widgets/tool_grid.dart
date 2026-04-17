@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:icarus/const/coordinate_system.dart';
@@ -207,16 +206,6 @@ class ToolGrid extends ConsumerWidget {
                       return;
                     }
 
-                    if (kIsWeb) {
-                      Settings.showToast(
-                        message:
-                            'This feature is only supported in the Windows version.',
-                        backgroundColor:
-                            Settings.tacticalVioletTheme.destructive,
-                      );
-                      return;
-                    }
-
                     final aspectRatio = await ref
                         .read(placedImageProvider.notifier)
                         .getImageAspectRatio(imageBytes);
@@ -244,15 +233,6 @@ class ToolGrid extends ConsumerWidget {
                 tooltip: "Add Lineup",
                 shortcutLabel: 'G',
                 onPressed: () async {
-                  if (kIsWeb) {
-                    Settings.showToast(
-                      message:
-                          'This feature is only supported in the Windows version.',
-                      backgroundColor: Settings.tacticalVioletTheme.destructive,
-                    );
-                    return;
-                  }
-
                   if (ref.watch(interactionStateProvider) ==
                       InteractionState.lineUpPlacing) {
                     ref

@@ -17,3 +17,29 @@ void postEmbedSavePayload(String json) {
     // Ignore postMessage failures (e.g. no parent).
   }
 }
+
+void postOpenExternalLink(String url) {
+  if (!icarusEmbedMode) return;
+  try {
+    html.window.parent?.postMessage(
+      jsonEncode({
+        'type': 'ICARUS_OPEN_EXTERNAL',
+        'url': url,
+      }),
+      '*',
+    );
+  } catch (_) {}
+}
+
+void postStrategyNameChanged(String name) {
+  if (!icarusEmbedMode) return;
+  try {
+    html.window.parent?.postMessage(
+      jsonEncode({
+        'type': 'ICARUS_NAME_CHANGED',
+        'name': name,
+      }),
+      '*',
+    );
+  } catch (_) {}
+}

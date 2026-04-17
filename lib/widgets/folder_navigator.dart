@@ -181,8 +181,9 @@ class _FolderNavigatorState extends ConsumerState<FolderNavigator> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<UpdateCheckResult>>(appUpdateStatusProvider,
-        (_, next) {
+    if (!kIsWeb) {
+      ref.listen<AsyncValue<UpdateCheckResult>>(appUpdateStatusProvider,
+          (_, next) {
       next.whenData((result) {
         if (!mounted) {
           return;
@@ -222,6 +223,7 @@ class _FolderNavigatorState extends ConsumerState<FolderNavigator> {
         });
       });
     });
+    }
 
     final double height = MediaQuery.sizeOf(context).height - 90;
     final Size playAreaSize = Size(height * (16 / 9), height);
@@ -291,7 +293,7 @@ class _FolderNavigatorState extends ConsumerState<FolderNavigator> {
             actionsPadding: const EdgeInsets.only(right: 24),
 
             actions: [
-              if (kIsWeb)
+              if (kIsWeb && !icarusEmbedMode)
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8.0),
                   child: DemoTag(),

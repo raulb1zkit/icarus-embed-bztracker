@@ -9,6 +9,7 @@ import 'package:icarus/const/settings.dart';
 import 'package:icarus/providers/image_provider.dart';
 import 'package:icarus/services/clipboard_service.dart';
 import 'package:icarus/widgets/sidebar_widgets/color_buttons.dart';
+import 'package:icarus/widgets/web_file_drop_target.dart';
 
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -149,8 +150,23 @@ class _UploadImageDialogState extends ConsumerState<UploadImageDialog> {
           : null,
     );
 
-    // Desktop drag/drop wrapper (no-op on web).
-    if (!kIsWeb) {
+    if (kIsWeb) {
+      // Web drag/drop wrapper that hooks into native HTML drop events.
+      content = WebFileDropTarget(
+        onDragChanged: (value) {
+          if (mounted) setState(() => _isDragging = value);
+        },
+        onDropFile: (file) async {
+          if (!mounted) return;
+          setState(() {
+            _selectedBytes = file.bytes;
+            _selectedName = file.name;
+            _isDragging = false;
+          });
+        },
+        child: content,
+      );
+    } else {
       content = DropTarget(
         onDragEntered: (_) => setState(() => _isDragging = true),
         onDragExited: (_) => setState(() => _isDragging = false),
@@ -205,9 +221,7 @@ class _UploadImageDialogState extends ConsumerState<UploadImageDialog> {
               content,
               const SizedBox(height: 12),
               Text(
-                kIsWeb
-                    ? 'Tip: Drag & drop isn’t available on web.'
-                    : 'Tip: You can also drag & drop an image from your desktop.',
+                'Tip: You can also drag & drop an image from your desktop.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' show ImageFilter;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:icarus/const/coordinate_system.dart';
@@ -177,15 +178,19 @@ class _ImageWidgetState extends ConsumerState<ImageWidget> {
     final cardWidth =
         (totalWidth - leftChromeWidth).clamp(1.0, double.infinity);
     final cardHeight = (cardWidth - 10) / safeAspectRatio + 10;
-    final file = File(path.join(
-      ref.watch(strategyProvider).storageDirectory!,
-      'images',
-      '${widget.id}${widget.fileExtension}',
-    ));
+    final storageDir = ref.watch(strategyProvider).storageDirectory;
+    final File? file = (kIsWeb || storageDir == null || widget.fileExtension == null)
+        ? null
+        : File(path.join(
+            storageDir,
+            'images',
+            '${widget.id}${widget.fileExtension}',
+          ));
+    final bool fileExists = file != null && file.existsSync();
 
     // Build the small image widget used both here and in the hero
     Widget buildThumb() {
-      if (file.existsSync() && widget.fileExtension != null) {
+      if (fileExists) {
         return Image.file(file, fit: BoxFit.contain);
       }
       if (widget.link != null && widget.link!.isNotEmpty) {
@@ -199,11 +204,8 @@ class _ImageWidgetState extends ConsumerState<ImageWidget> {
         _showImageFullScreenOverlay(
           context: context,
           heroTag: 'image_${widget.id}',
-          file:
-              (file.existsSync() && widget.fileExtension != null) ? file : null,
-          networkLink: (file.existsSync() && widget.fileExtension != null)
-              ? null
-              : widget.link,
+          file: fileExists ? file : null,
+          networkLink: fileExists ? null : widget.link,
           aspectRatio: widget.aspectRatio,
         );
       },

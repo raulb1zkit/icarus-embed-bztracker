@@ -3,7 +3,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:icarus/const/coordinate_system.dart';
+import 'package:icarus/const/embed_mode.dart';
 import 'package:icarus/const/image_scale_policy.dart';
+import 'package:icarus/embed/embed_request_router.dart'
+    if (dart.library.html) 'package:icarus/embed/embed_request_router_web.dart'
+    as upload_bridge;
 import 'package:icarus/providers/image_widget_size_provider.dart';
 import 'package:icarus/services/app_error_reporter.dart';
 import 'package:image/image.dart' as img;
@@ -16,6 +20,23 @@ import 'package:icarus/providers/strategy_provider.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+
+String _kanvasMimeForExtension(String ext) {
+  final normalized = ext.startsWith('.') ? ext.substring(1) : ext;
+  switch (normalized.toLowerCase()) {
+    case 'png':
+      return 'image/png';
+    case 'jpg':
+    case 'jpeg':
+      return 'image/jpeg';
+    case 'webp':
+      return 'image/webp';
+    case 'gif':
+      return 'image/gif';
+    default:
+      return 'application/octet-stream';
+  }
+}
 
 final placedImageProvider =
     NotifierProvider<PlacedImageProvider, ImageState>(PlacedImageProvider.new);
@@ -136,14 +157,16 @@ class PlacedImageProvider extends Notifier<ImageState> {
       int? tagColorValue}) async {
     final imageID = const Uuid().v4();
 
-    await ref
+    final uploadedUrl = await ref
         .read(placedImageProvider.notifier)
         .saveSecureImage(imageBytes, imageID, fileExtension);
 
     final effectiveAspectRatio =
         aspectRatio ?? await getImageAspectRatio(imageBytes);
     final placedImage = PlacedImage(
-      fileExtension: fileExtension,
+      // On web embed the bytes live in Supabase Storage, not on disk; clearing
+      // the extension routes the renderer to Image.network(link).
+      fileExtension: kIsWeb && uploadedUrl != null ? null : fileExtension,
       position: position ?? const Offset(500, 500),
       id: imageID,
       aspectRatio: effectiveAspectRatio,
@@ -151,6 +174,9 @@ class PlacedImageProvider extends Notifier<ImageState> {
       sizeVersion: worldSizedMediaVersion,
       tagColorValue: tagColorValue,
     );
+    if (uploadedUrl != null) {
+      placedImage.link = uploadedUrl;
+    }
 
     final action = UserAction(
       type: ActionType.addition,
@@ -364,14 +390,31 @@ class PlacedImageProvider extends Notifier<ImageState> {
     state = newState;
   }
 
-  Future<void> saveSecureImage(
+  Future<String?> saveSecureImage(
     Uint8List imageBytes,
     String imageID,
     String fileExtenstion,
   ) async {
+    if (kIsWeb) {
+      if (!icarusEmbedMode) return null;
+      try {
+        final url = await upload_bridge.uploadImageThroughBridge(
+          bytes: imageBytes,
+          mime: _kanvasMimeForExtension(fileExtenstion),
+          fileName: '$imageID$fileExtenstion',
+        );
+        return url;
+      } catch (error, stackTrace) {
+        AppErrorReporter.reportError(
+          'Failed to upload image through embed bridge: $error',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        return null;
+      }
+    }
     final strategyID = ref.read(strategyProvider).id;
     // Get the system's application support directory.
-    if (kIsWeb) return;
     final directory = await getApplicationSupportDirectory();
 
     // Create a custom directory inside the application support directory.
@@ -398,6 +441,7 @@ class PlacedImageProvider extends Notifier<ImageState> {
     // Write the file.
     final file = File(filePath);
     await file.writeAsBytes(imageBytes);
+    return null;
   }
 
   static List<PlacedImage> deepCopyWith(List<PlacedImage> images) {
@@ -473,7 +517,18 @@ class PlacedImageSerializer {
   /// A new strategy ID is generated for the file location using [Uuid].
   static Future<PlacedImage> fromJson(
       Map<String, dynamic> json, String strategyID) async {
-    // Use your code-generated deserializer for basic fields.
+    // On web, embedded JSON never carries binary `imageBytes` — only metadata
+    // and a `link` pointing to Supabase Storage. Skip the disk write path.
+    if (kIsWeb) {
+      final parsedImage = PlacedImage.fromJson(json);
+      final placedImage = parsedImage.copyWith(
+          scale: ImageScalePolicy.clamp(parsedImage.scale));
+      final link = json['link'];
+      if (link is String && link.isNotEmpty) {
+        placedImage.updateLink(link);
+      }
+      return placedImage;
+    }
 
     // Retrieve and deserialize the image bytes
     if (!json.containsKey('imageBytes') && !json.containsKey("image")) {
