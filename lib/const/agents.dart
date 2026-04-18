@@ -196,11 +196,35 @@ class AgentData implements DraggableData {
         abilityData:
             ImageAbility(imagePath: 'assets/agents/Jett/Smoke.webp', size: 30),
       ),
-    AgentType.raze: AgentData(
-      type: AgentType.raze,
-      role: AgentRole.duelist,
-      name: "Raze",
-    ),
+    AgentType.raze: (() {
+      final agent = AgentData(
+        type: AgentType.raze,
+        role: AgentRole.duelist,
+        name: "Raze",
+      );
+      // Boom Bot — detection range
+      agent.abilities.first.abilityData = CircleAbility(
+        iconPath: agent.abilities.first.iconPath,
+        size: 5,
+        rangeOutlineColor: Colors.orangeAccent,
+        hasCenterDot: true,
+      );
+      // Paint Shells — cluster explosion radius
+      agent.abilities[2].abilityData = CircleAbility(
+        iconPath: agent.abilities[2].iconPath,
+        size: 4,
+        rangeOutlineColor: Colors.orangeAccent,
+        hasCenterDot: true,
+      );
+      // Showstopper — rocket explosion radius
+      agent.abilities.last.abilityData = CircleAbility(
+        iconPath: agent.abilities.last.iconPath,
+        size: 3.5,
+        rangeOutlineColor: Colors.orangeAccent,
+        hasCenterDot: true,
+      );
+      return agent;
+    })(),
     AgentType.pheonix: (() {
       final agent = AgentData(
         type: AgentType.pheonix,
@@ -292,6 +316,14 @@ class AgentData implements DraggableData {
         distanceBetweenAOE: 8 * inGameMeters,
       );
 
+      // Flashpoint — flash through walls radius
+      agent.abilities[1].abilityData = CircleAbility(
+        iconPath: agent.abilities[1].iconPath,
+        size: 6,
+        rangeOutlineColor: Colors.orangeAccent,
+        hasCenterDot: true,
+      );
+
       agent.abilities.last.abilityData = SquareAbility(
         width: 18 * inGameMeters,
         height: 32 * inGameMeters,
@@ -332,14 +364,31 @@ class AgentData implements DraggableData {
         iconPath: agent.abilities[2].iconPath,
         color: Colors.greenAccent,
       );
+      // Viper's Pit — large ult smoke circle
+      agent.abilities.last.abilityData = CircleAbility(
+        iconPath: agent.abilities.last.iconPath,
+        size: 12,
+        rangeOutlineColor: Colors.greenAccent,
+        hasCenterDot: true,
+      );
 
       return agent;
     })(),
-    AgentType.yoru: AgentData(
-      type: AgentType.yoru,
-      role: AgentRole.duelist,
-      name: "Yoru",
-    ),
+    AgentType.yoru: (() {
+      final agent = AgentData(
+        type: AgentType.yoru,
+        role: AgentRole.duelist,
+        name: "Yoru",
+      );
+      // Gatecrash — tether detection radius
+      agent.abilities[2].abilityData = CircleAbility(
+        iconPath: agent.abilities[2].iconPath,
+        size: 4,
+        rangeOutlineColor: Colors.cyan,
+        hasCenterDot: true,
+      );
+      return agent;
+    })(),
     AgentType.sova: (() {
       final agent = AgentData(
         type: AgentType.sova,
@@ -377,12 +426,34 @@ class AgentData implements DraggableData {
         name: "Skye",
       );
 
-      // Heal
+      // Regrowth — heal range
       agent.abilities.first.abilityData = CircleAbility(
         iconPath: agent.abilities.first.iconPath,
         size: 18,
         rangeOutlineColor: Colors.green,
         hasCenterDot: true,
+      );
+      // Trailblazer — wolf detection/stun radius
+      agent.abilities[1].abilityData = CircleAbility(
+        iconPath: agent.abilities[1].iconPath,
+        size: 3,
+        rangeOutlineColor: Colors.green,
+        hasCenterDot: true,
+      );
+      // Guiding Light — hawk flash radius
+      agent.abilities[2].abilityData = CircleAbility(
+        iconPath: agent.abilities[2].iconPath,
+        size: 5.5,
+        rangeOutlineColor: Colors.green,
+        hasCenterDot: true,
+      );
+      // Seekers — ult seekers range
+      agent.abilities.last.abilityData = CircleAbility(
+        iconPath: agent.abilities.last.iconPath,
+        size: 40,
+        rangeOutlineColor: Colors.green,
+        hasCenterDot: true,
+        opacity: 0,
       );
 
       return agent;
@@ -405,6 +476,14 @@ class AgentData implements DraggableData {
       agent.abilities[3].abilityData = CircleAbility(
         iconPath: agent.abilities[3].iconPath,
         size: 42.5,
+        rangeOutlineColor: const Color(0xFF8C06A3),
+        hasCenterDot: true,
+      );
+
+      // FLASH/drive — flash grenade radius
+      agent.abilities[1].abilityData = CircleAbility(
+        iconPath: agent.abilities[1].iconPath,
+        size: 10,
         rangeOutlineColor: const Color(0xFF8C06A3),
         hasCenterDot: true,
       );
@@ -541,9 +620,24 @@ class AgentData implements DraggableData {
         hasCenterDot: true,
       );
 
+      // Rendezvous — anchor link range
+      agent.abilities[1].abilityData = CircleAbility(
+        iconPath: agent.abilities[1].iconPath,
+        size: 15,
+        rangeOutlineColor: Colors.amber,
+        hasCenterDot: true,
+      );
+
       agent.abilities[2].abilityData = CircleAbility(
         iconPath: agent.abilities[2].iconPath,
         size: 18,
+        rangeOutlineColor: Colors.amber,
+        hasCenterDot: true,
+      );
+      // Tour de Force — slow zone per kill
+      agent.abilities.last.abilityData = CircleAbility(
+        iconPath: agent.abilities.last.iconPath,
+        size: 5,
         rangeOutlineColor: Colors.amber,
         hasCenterDot: true,
       );
@@ -555,6 +649,14 @@ class AgentData implements DraggableData {
         type: AgentType.fade,
         role: AgentRole.initiator,
         name: "Fade",
+      );
+
+      // Prowler — creature travel path
+      agent.abilities.first.abilityData = SquareAbility(
+        width: 3 * inGameMetersDiameter,
+        height: 12 * inGameMeters,
+        iconPath: agent.abilities.first.iconPath,
+        color: const Color(0xFF680A79),
       );
 
       agent.abilities[1].abilityData = CircleAbility(
@@ -603,6 +705,13 @@ class AgentData implements DraggableData {
         iconPath: agent.abilities[1].iconPath,
         size: 5,
         rangeOutlineColor: Colors.blue,
+        hasCenterDot: true,
+      );
+      // Relay Bolt — lightning stun zone
+      agent.abilities[2].abilityData = CircleAbility(
+        iconPath: agent.abilities[2].iconPath,
+        size: 4,
+        rangeOutlineColor: Colors.blueAccent,
         hasCenterDot: true,
       );
 
@@ -679,9 +788,24 @@ class AgentData implements DraggableData {
           ),
         );
 
+      // Pick-Me-Up — orb pickup range
+      agent.abilities.first.abilityData = CircleAbility(
+        iconPath: agent.abilities.first.iconPath,
+        size: 4,
+        rangeOutlineColor: const Color.fromARGB(255, 251, 106, 154),
+        hasCenterDot: true,
+      );
+
       agent.abilities[1].abilityData = CircleAbility(
         iconPath: agent.abilities[1].iconPath,
         size: 4,
+        rangeOutlineColor: const Color.fromARGB(255, 251, 106, 154),
+        hasCenterDot: true,
+      );
+      // Not Dead Yet — ult resurrection radius on death
+      agent.abilities.last.abilityData = CircleAbility(
+        iconPath: agent.abilities.last.iconPath,
+        size: 7,
         rangeOutlineColor: const Color.fromARGB(255, 251, 106, 154),
         hasCenterDot: true,
       );
@@ -745,6 +869,14 @@ class AgentData implements DraggableData {
         iconPath: agent.abilities[2].iconPath,
         color: Colors.blue,
       );
+      // Annihilation — ult capture beam (linear)
+      agent.abilities.last.abilityData = ResizableSquareAbility(
+        width: 3 * inGameMeters,
+        height: 40 * inGameMeters,
+        iconPath: agent.abilities.last.iconPath,
+        color: Colors.blue,
+        minLength: 5 * inGameMeters,
+      );
 
       return agent;
     })(),
@@ -758,6 +890,20 @@ class AgentData implements DraggableData {
       agent.abilities.first.abilityData = CircleAbility(
         iconPath: agent.abilities.first.iconPath,
         size: 6.2,
+        rangeOutlineColor: Colors.greenAccent,
+        hasCenterDot: true,
+      );
+      // Dizzy — flash creature radius
+      agent.abilities[1].abilityData = CircleAbility(
+        iconPath: agent.abilities[1].iconPath,
+        size: 6,
+        rangeOutlineColor: Colors.greenAccent,
+        hasCenterDot: true,
+      );
+      // Thrash — ult explosion radius
+      agent.abilities.last.abilityData = CircleAbility(
+        iconPath: agent.abilities.last.iconPath,
+        size: 4,
         rangeOutlineColor: Colors.greenAccent,
         hasCenterDot: true,
       );
@@ -787,14 +933,15 @@ class AgentData implements DraggableData {
         hasCenterDot: true,
       );
 
-      // agent.abilities.first.abilityData = ResizableSquareAbility(
-      //   width: 9.75 * inGameMeters,
-      //   height: 35 * inGameMeters,
-      //   minLength: 5 * inGameMeters,
-      //   iconPath: agent.abilities.first.iconPath,
-      //   hasTopborder: true,
-      //   color: Colors.lightBlue,
-      // );
+      // High Tide — water wall (resizable)
+      agent.abilities[1].abilityData = ResizableSquareAbility(
+        width: 5 * inGameMeters,
+        height: 35 * inGameMeters,
+        iconPath: agent.abilities[1].iconPath,
+        color: Colors.lightBlue,
+        minLength: 5 * inGameMeters,
+        defaultToMaxLength: true,
+      );
 
       agent.abilities.last.abilityData = ResizableSquareAbility(
         width: 20 * inGameMeters,
@@ -827,6 +974,14 @@ class AgentData implements DraggableData {
         size: 6.25,
         rangeOutlineColor: Colors.deepPurple,
         hasCenterDot: true,
+      );
+
+      // Razorvine — vine trap area
+      agent.abilities[2].abilityData = SquareAbility(
+        width: 10 * inGameMeters,
+        height: 15 * inGameMeters,
+        iconPath: agent.abilities[2].iconPath,
+        color: Colors.deepPurple,
       );
 
       agent.abilities.last.abilityData = CircleAbility(
@@ -917,6 +1072,13 @@ class AgentData implements DraggableData {
       agent.abilities[2].abilityData = CircleAbility(
         iconPath: agent.abilities[2].iconPath,
         size: 18,
+        rangeOutlineColor: Colors.lightBlueAccent,
+        hasCenterDot: true,
+      );
+      // Ult — large area
+      agent.abilities.last.abilityData = CircleAbility(
+        iconPath: agent.abilities.last.iconPath,
+        size: 30,
         rangeOutlineColor: Colors.lightBlueAccent,
         hasCenterDot: true,
       );
