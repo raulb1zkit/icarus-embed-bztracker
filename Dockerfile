@@ -1,7 +1,7 @@
 FROM ghcr.io/cirruslabs/flutter:stable AS builder
 WORKDIR /app
 COPY . .
-RUN flutter build web --release
+RUN flutter build web --release --no-tree-shake-icons
 
 FROM nginx:alpine AS runner
 COPY --from=builder /app/build/web /usr/share/nginx/html/kanvas-embed
