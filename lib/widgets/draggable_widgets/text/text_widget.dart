@@ -149,7 +149,7 @@ class _EditableTextWidgetState extends ConsumerState<_EditableTextWidget> {
     if (!mounted) return;
 
     final renderObject = context.findRenderObject();
-    if (renderObject is! RenderBox) return;
+    if (renderObject is! RenderBox || !renderObject.hasSize) return;
 
     final offset = Offset(renderObject.size.width, renderObject.size.height);
     ref.read(textWidgetHeightProvider.notifier).updateHeight(widget.id, offset);

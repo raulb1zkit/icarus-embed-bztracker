@@ -155,12 +155,12 @@ class _ImageWidgetState extends ConsumerState<ImageWidget> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      if (widget.isFeedback) return;
+      if (!mounted || widget.isFeedback) return;
       RenderObject? renderObject = context.findRenderObject();
-      RenderBox? renderBox = renderObject as RenderBox;
+      if (renderObject is! RenderBox || !renderObject.hasSize) return;
       // if (renderBox == null) return;
-      double height = renderBox.size.height;
-      double width = renderBox.size.width;
+      double height = renderObject.size.height;
+      double width = renderObject.size.width;
 
       Offset offset = Offset(width, height);
 
@@ -212,13 +212,14 @@ class _ImageWidgetState extends ConsumerState<ImageWidget> {
       child: NotificationListener<SizeChangedLayoutNotification>(
         onNotification: (notification) {
           if (widget.isFeedback) return true;
-          RenderObject? renderObject = context.findRenderObject();
-          RenderBox? renderBox = renderObject as RenderBox;
-          double height = renderBox.size.height;
-          double width = renderBox.size.width;
-
-          Offset offset = Offset(width, height);
           WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+            if (!mounted) return;
+            RenderObject? renderObject = context.findRenderObject();
+            if (renderObject is! RenderBox || !renderObject.hasSize) return;
+            double height = renderObject.size.height;
+            double width = renderObject.size.width;
+
+            Offset offset = Offset(width, height);
             ref
                 .read(imageWidgetSizeProvider.notifier)
                 .updateSize(widget.id, offset);
