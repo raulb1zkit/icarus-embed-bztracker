@@ -88,6 +88,7 @@ class _EditableTextWidgetState extends ConsumerState<_EditableTextWidget> {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _updateMeasuredSize();
     });
   }
@@ -151,8 +152,12 @@ class _EditableTextWidgetState extends ConsumerState<_EditableTextWidget> {
     final renderObject = context.findRenderObject();
     if (renderObject is! RenderBox || !renderObject.hasSize) return;
 
-    final offset = Offset(renderObject.size.width, renderObject.size.height);
-    ref.read(textWidgetHeightProvider.notifier).updateHeight(widget.id, offset);
+    try {
+      final offset = Offset(renderObject.size.width, renderObject.size.height);
+      ref.read(textWidgetHeightProvider.notifier).updateHeight(widget.id, offset);
+    } on StateError {
+      return;
+    }
   }
 
   @override
@@ -162,6 +167,7 @@ class _EditableTextWidgetState extends ConsumerState<_EditableTextWidget> {
       child: NotificationListener<SizeChangedLayoutNotification>(
         onNotification: (notification) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
             _updateMeasuredSize();
           });
           return true;

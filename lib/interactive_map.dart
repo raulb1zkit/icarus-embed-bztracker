@@ -66,6 +66,7 @@ class _InteractiveMapState extends ConsumerState<InteractiveMap> {
   Size? _lastPlayAreaSize;
   bool _placementCenterUpdateScheduled = false;
   bool _zoomSyncScheduled = false;
+  bool _resizePending = false;
   double? _pendingZoom;
 
   void _scheduleZoomSync() {
@@ -187,10 +188,14 @@ class _InteractiveMapState extends ConsumerState<InteractiveMap> {
           );
           _lastViewportSize = viewportSize;
           _lastPlayAreaSize = playAreaSize;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            ref.read(canvasResizeProvider.notifier).increment();
-          });
+          if (!_resizePending) {
+            _resizePending = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _resizePending = false;
+              if (!mounted) return;
+              ref.read(canvasResizeProvider.notifier).increment();
+            });
+          }
         }
         final double mapWidth = height * coordinateSystem.mapAspectRatio;
         final double mapLeft = (worldWidth - mapWidth) / 2;

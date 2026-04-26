@@ -194,14 +194,20 @@ class _MouseWatchState extends ConsumerState<MouseWatch> {
       }
 
       final renderObject = _hitboxKey.currentContext?.findRenderObject();
-      if (renderObject is! RenderBox || !renderObject.attached) {
+      if (renderObject is! RenderBox || !renderObject.attached || !renderObject.hasSize) {
         return;
       }
 
-      final rect = MatrixUtils.transformRect(
-        renderObject.getTransformTo(null),
-        Offset.zero & renderObject.size,
-      );
+      final Rect rect;
+      try {
+        rect = MatrixUtils.transformRect(
+          renderObject.getTransformTo(null),
+          Offset.zero & renderObject.size,
+        );
+      } on StateError {
+        return;
+      }
+
       if (_lastRegisteredHitbox == rect) {
         return;
       }

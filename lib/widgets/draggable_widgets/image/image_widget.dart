@@ -158,13 +158,16 @@ class _ImageWidgetState extends ConsumerState<ImageWidget> {
       if (!mounted || widget.isFeedback) return;
       RenderObject? renderObject = context.findRenderObject();
       if (renderObject is! RenderBox || !renderObject.hasSize) return;
-      // if (renderBox == null) return;
-      double height = renderObject.size.height;
-      double width = renderObject.size.width;
+      try {
+        double height = renderObject.size.height;
+        double width = renderObject.size.width;
 
-      Offset offset = Offset(width, height);
+        Offset offset = Offset(width, height);
 
-      ref.read(imageWidgetSizeProvider.notifier).updateSize(widget.id, offset);
+        ref.read(imageWidgetSizeProvider.notifier).updateSize(widget.id, offset);
+      } on StateError {
+        return;
+      }
     });
   }
 
@@ -216,13 +219,17 @@ class _ImageWidgetState extends ConsumerState<ImageWidget> {
             if (!mounted) return;
             RenderObject? renderObject = context.findRenderObject();
             if (renderObject is! RenderBox || !renderObject.hasSize) return;
-            double height = renderObject.size.height;
-            double width = renderObject.size.width;
+            try {
+              double height = renderObject.size.height;
+              double width = renderObject.size.width;
 
-            Offset offset = Offset(width, height);
-            ref
-                .read(imageWidgetSizeProvider.notifier)
-                .updateSize(widget.id, offset);
+              Offset offset = Offset(width, height);
+              ref
+                  .read(imageWidgetSizeProvider.notifier)
+                  .updateSize(widget.id, offset);
+            } on StateError {
+              return;
+            }
           });
           return true;
         },

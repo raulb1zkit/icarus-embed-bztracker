@@ -124,10 +124,23 @@ class _CustomSegmentedTabsState<T> extends State<CustomSegmentedTabs<T>> {
         continue;
       }
 
-      final left = tabRenderObject
-          .localToGlobal(Offset.zero, ancestor: stackRenderObject)
-          .dx;
-      final width = tabRenderObject.size.width;
+      if (!tabRenderObject.hasSize) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _measureSegments();
+        });
+        continue;
+      }
+
+      double left;
+      double width;
+      try {
+        left = tabRenderObject
+            .localToGlobal(Offset.zero, ancestor: stackRenderObject)
+            .dx;
+        width = tabRenderObject.size.width;
+      } on StateError {
+        continue;
+      }
 
       if ((_segmentLefts[i] - left).abs() > 0.5 ||
           (_segmentWidths[i] - width).abs() > 0.5) {
