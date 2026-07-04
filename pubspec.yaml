@@ -41,6 +41,9 @@ dependencies:
   pasteboard: ^0.4.0
   desktop_updater: ^1.4.0
   cryptography_plus: ^2.7.1
+  # Keep this direct until shadcn_ui raises its transitive constraint.
+  # 3.1.9 extends IconData, which is final in Flutter 3.44 / Dart 3.12.
+  lucide_icons_flutter: 3.1.14+2
 
 
 dev_dependencies:
